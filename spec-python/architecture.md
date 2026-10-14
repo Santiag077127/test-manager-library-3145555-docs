@@ -1,32 +1,33 @@
-# Arquitectura — Manager Library (Python)
+# Architecture — Manager Library (Python)
 
-Arquitectura **hexagonal** (puertos y adaptadores). Las reglas de dependencia son los artículos I a III de [`constitution.md`](constitution.md).
+**Hexagonal architecture** (ports and adapters). Dependency rules are Articles I through III of
+[`constitution.md`](constitution.md).
 
-## 1. Capas y dependencias
+## 1. Layers and dependencies
 
 ```mermaid
 flowchart LR
-    subgraph Entrada
+    subgraph Inbound
       HTTP["adapters/inbound/http<br/>(FastAPI)"]
     end
-    subgraph Núcleo
-      APP["application<br/>casos de uso + puertos"]
-      DOM["domain<br/>agregados y objetos de valor"]
+    subgraph Core
+      APP["application<br/>use cases + ports"]
+      DOM["domain<br/>aggregates and value objects"]
     end
-    subgraph Salida
+    subgraph Outbound
       DB["adapters/outbound/persistence<br/>(SQLAlchemy 2 + Alembic)"]
-      STO["adapters/outbound/storage<br/>portadas"]
-      SEC["adapters/outbound/security<br/>hash y token"]
+      STO["adapters/outbound/storage<br/>covers"]
+      SEC["adapters/outbound/security<br/>hashing and token"]
     end
     HTTP --> APP --> DOM
-    DB -. implementa puertos de .-> APP
-    STO -. implementa .-> APP
-    SEC -. implementa .-> APP
+    DB -. implements ports from .-> APP
+    STO -. implements .-> APP
+    SEC -. implements .-> APP
 ```
 
-Las flechas de dependencia apuntan **hacia adentro**. `bootstrap` es el único que ve las dos mitades.
+Dependency arrows point **inward**. `bootstrap` is the only component that sees both sides.
 
-## 2. Estructura de carpetas
+## 2. Directory structure
 
 ```text
 src/library/
@@ -37,28 +38,28 @@ src/library/
 │   └── services/        # LendBooksService, ReturnItemService, CreateBookService, SearchBooksService,
 │                        # OverdueService, MostBorrowedReportService, LoginService, CreateLibrarianService
 ├── adapters/
-│   ├── inbound/http/    # routers/controladores, esquemas de petición, manejo de errores
+│   ├── inbound/http/    # routers/controllers, request schemas, error handling
 │   └── outbound/        # persistence/, storage/, security/
-└── bootstrap/composition/   # src/library/bootstrap/composition/port_bindings.py — único punto de composición
+└── bootstrap/composition/   # src/library/bootstrap/composition/port_bindings.py — single composition point
 ```
 
-## 3. Agregados
+## 3. Aggregates
 
-| Raíz | Contiene | Invariantes que defiende |
+| Root | Contains | Invariants it protects |
 |---|---|---|
-| `Book` | `Isbn`, copias totales y disponibles, baja lógica | disponibles entre 0 y total; total ≥ 1; título no vacío |
-| `Loan` | colección de `LoanItem` | 1 a 3 líneas; sin libro repetido; vencimiento a 14 días; inmutable salvo devolución |
-| `Member` | documento | documento obligatorio y único |
-| `User` | rol, hash | nombre normalizado; rol en (`admin`, `librarian`) |
+| `Book` | `Isbn`, total and available copies, logical deletion | available copies between 0 and total; total ≥ 1; non-empty title |
+| `Loan` | collection of `LoanItem` | 1 to 3 items; no duplicate book; 14-day due date; immutable except for return |
+| `Member` | document number | required and unique document number |
+| `User` | role, hash | normalized username; role in (`admin`, `librarian`) |
 
-`Loan.AddItem` llama a `Book.Withdraw` antes de añadir la línea: descontar el ejemplar y crear la línea son **una sola operación**.
-`Loan.ReturnItem` llama a `Book.Restock` una sola vez por línea.
+`Loan.AddItem` calls `Book.Withdraw` before adding the item: decrementing the copy and creating the
+item are **one operation**. `Loan.ReturnItem` calls `Book.Restock` only once per item.
 
-## 4. Flujo: registrar un préstamo
+## 4. Flow: record a loan
 
 ```mermaid
 sequenceDiagram
-    participant C as Cliente
+    participant C as Client
     participant H as HTTP
     participant S as LendBooksService
     participant M as MemberRepository
@@ -66,21 +67,23 @@ sequenceDiagram
     participant L as LoanRepository
     C->>H: POST /api/v1/loans
     H->>S: Lend(memberId, bookIds)
-    S->>M: obtener socio + líneas sin devolver
-    S->>S: ¿tiene vencidos? ¿supera 3?
-    S->>B: obtener libros por lote (Q3)
-    S->>S: Loan.AddItem → Book.Withdraw (por cada libro)
-    S->>L: guardar préstamo + libros (una transacción)
-    L-->>S: ok o BookNotAvailable
-    S-->>H: préstamo o BOOK_NOT_AVAILABLE
-    H-->>C: 201 o 409
+    S->>M: get member + unreturned items
+    S->>S: overdue items? exceeds 3?
+    S->>B: get books in batch (Q3)
+    S->>S: Loan.AddItem → Book.Withdraw (for each book)
+    S->>L: save loan + books (one transaction)
+    L-->>S: ok or BookNotAvailable
+    S-->>H: loan or BOOK_NOT_AVAILABLE
+    H-->>C: 201 or 409
 ```
 
-## 5. Errores
+## 5. Errors
 
-El dominio y la aplicación lanzan errores propios (`BookNotAvailable`, `MemberHasOverdue`, `MemberLimitExceeded`, …). **Solo** el adaptador HTTP los
-traduce al cuerpo único y al código de estado de [`api-contract.md`](api-contract.md). Un error de framework nunca llega al cliente.
+The domain and application raise their own errors (`BookNotAvailable`, `MemberHasOverdue`,
+`MemberLimitExceeded`, …). **Only** the HTTP adapter translates them to the single body and status
+code in [`api-contract.md`](api-contract.md). A framework error never reaches the client.
 
-## 6. Qué no hay
+## 6. What is not included
 
-Sin eventos, sin colas, sin caché, sin microservicios, sin multi-tenencia. Se añaden si un requisito lo pide, no antes.
+No events, queues, cache, microservices, or multi-tenancy. They are added only if a requirement asks
+for them, never in advance.
