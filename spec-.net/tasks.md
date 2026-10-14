@@ -1,34 +1,36 @@
-# Tareas — Manager Library (.NET)
+# Tasks — Manager Library (.NET)
 
-Cada tarea termina cuando su **evidencia** existe y se puede ejecutar (artículo XII). Estado inicial de todas: **pendiente**.
+A task is complete only when its **evidence** exists and can be executed (Article XII). The initial
+state of every task is **pending**.
 
-| # | Tarea | Depende de | Evidencia |
+| # | Task | Depends on | Evidence |
 |---|---|---|---|
-| T-01 | Esqueleto del proyecto y `GET /health` | — | `GET /health` responde `{"status":"ok"}`; el contenedor arranca con un comando |
-| T-02 | Migración inicial: seis tablas, FK, índices únicos y las cinco categorías sembradas | T-01 | Las consultas de `data-model.md` §10 devuelven lo documentado; ninguna columna con `DEFAULT` |
-| T-03 | Dominio: `Isbn`, `Quantity`, `DateRange` (objetos de valor) | T-01 | Pruebas unitarias: ISBN de 13 dígitos, cantidad > 0, fin ≥ inicio |
-| T-04 | Dominio: `Book` (`Withdraw`, `Restock`, baja lógica) | T-03 | Pruebas: nunca < 0, nunca > total |
-| T-05 | Dominio: `Loan` (`AddItem`, `ReturnItem`, estado calculado, 14 días, máx. 3) | T-04 | Pruebas con un `Clock` falso: `open`, `overdue`, `closed` |
-| T-06 | Dominio: `Member` y `User` (normalización de nombre, rol válido) | T-03 | `"Ana "` queda `ana`; rol `admin` por API rechazado |
-| T-07 | Puertos y casos de uso de **autenticación** (`LoginService`, `CreateLibrarianService`) con fakes | T-06 | HU-01 y HU-02 pasan contra fakes |
-| T-08 | Puertos y casos de uso de **libros** (crear, buscar, editar, baja, portada) con fakes | T-04 | HU-03 y HU-04 pasan contra fakes |
-| T-09 | Caso de uso **prestar** (`LendBooksService`) con fakes | T-05, T-08 | HU-06 completa: límites, vencidos, sin ejemplares |
-| T-10 | Caso de uso **devolver** y **vencidos** | T-09 | HU-07 y HU-09; devolver dos veces → `ITEM_ALREADY_RETURNED` |
-| T-11 | Caso de uso **reporte de más prestados** y su puerto de lectura | T-09 | HU-10; el título viejo se conserva tras renombrar (ADR-004) |
-| T-12 | Adaptador de persistencia: repositorios de libro, socio, usuario | T-02, T-08 | Pruebas de integración contra PostgreSQL real |
-| T-13 | Adaptador de persistencia: repositorio de préstamos + descuento condicional atómico | T-12, T-09 | Dos préstamos del último ejemplar: uno 201, otro 409 (RNF-2) |
-| T-14 | Adaptador de seguridad: hash de claves y token JWT | T-07 | La clave nunca aparece en logs ni respuestas (RNF-3) |
-| T-15 | Adaptador de portadas (disco) | T-08 | Subir PNG de 2 MB ok; 3 MB → 422; sin portada → `cover_key` nulo |
-| T-16 | Adaptador HTTP: rutas de [`api-contract.md`](api-contract.md), cuerpo de error único, autorización por rol | T-10, T-11, T-14, T-15 | Prueba de contrato recorre todas las rutas y todos los códigos de §2 |
-| T-17 | Composición y arranque (admin inicial desde entorno) | T-16 | El sistema arranca con la base vacía y se puede iniciar sesión como admin |
-| T-18 | Bajar a la base las invariantes **solo dominio**: `ck_book_total_positive`, `ck_user_role` | T-12 | Un `INSERT` por `psql` que las viole falla; `data-model.md` §4 se actualiza |
-| T-19 | Pruebas de arquitectura (artículos I, II y III) | T-17 | NetArchTest pasa y falla si se introduce una importación prohibida |
-| T-20 | `infra`: `docker compose up` levanta motor vacío, API y frontend | T-17 | Un comando; la base arranca sin tablas hasta correr las migraciones |
-| T-21 | `tool`: sembrador de demostración **por la API** (≥ 40 libros, 10 socios, 15 préstamos, 3 vencidos) | T-17 | Tras correrlo, `/loans/overdue` devuelve 3 líneas y el reporte tiene filas |
-| T-22 | `app`: login, catálogo, socios, prestar, devolver, vencidos, reporte | T-16 | Recorrido manual de punta a punta en la feria |
-| T-23 | `page`: sitio público estático de presentación | — | Se abre sin la API; correcto en móvil y escritorio |
+| T-01 | Project skeleton and \`GET /health\` | — | \`GET /health\` returns \`{"status":"ok"}\`; the container starts with one command |
+| T-02 | Initial migration: six tables, FKs, unique indexes, and five seeded categories | T-01 | The \`data-model.md\` §10 queries return the documented model; no column has a \`DEFAULT\` |
+| T-03 | Domain: \`Isbn\`, \`Quantity\`, \`DateRange\` (value objects) | T-01 | Unit tests: 13-digit ISBN, quantity > 0, end ≥ start |
+| T-04 | Domain: \`Book\` (\`Withdraw\`, \`Restock\`, logical deletion) | T-03 | Tests: never < 0, never > total |
+| T-05 | Domain: \`Loan\` (\`AddItem\`, \`ReturnItem\`, calculated status, 14 days, max. 3) | T-04 | Tests with a fake \`Clock\`: \`open\`, \`overdue\`, \`closed\` |
+| T-06 | Domain: \`Member\` and \`User\` (username normalization, valid role) | T-03 | \`"Ana "\` becomes \`ana\`; an \`admin\` role through the API is rejected |
+| T-07 | **Authentication** ports and use cases (\`LoginService\`, \`CreateLibrarianService\`) with fakes | T-06 | HU-01 and HU-02 pass with fakes |
+| T-08 | **Book** ports and use cases (create, search, edit, logical deletion, cover) with fakes | T-04 | HU-03 and HU-04 pass with fakes |
+| T-09 | **Loan** use case (\`LendBooksService\`) with fakes | T-05, T-08 | Complete HU-06: limits, overdue items, unavailable copies |
+| T-10 | **Return** and **overdue** use cases | T-09 | HU-07 and HU-09; returning twice → \`ITEM_ALREADY_RETURNED\` |
+| T-11 | **Most-borrowed report** use case and its read port | T-09 | HU-10; old title remains after renaming (ADR-004) |
+| T-12 | Persistence adapter: book, member, and user repositories | T-02, T-08 | Integration tests against real PostgreSQL |
+| T-13 | Persistence adapter: loan repository and atomic conditional decrement | T-12, T-09 | Two loans for the last copy: one 201, one 409 (RNF-2) |
+| T-14 | Security adapter: password hashing and JWT token | T-07 | The password never appears in logs or responses (RNF-3) |
+| T-15 | Cover adapter (disk) | T-08 | Uploading a 2 MB PNG succeeds; 3 MB → 422; no cover → \`cover_key\` is null |
+| T-16 | HTTP adapter: [\`api-contract.md\`](api-contract.md) routes, single error body, role authorization | T-10, T-11, T-14, T-15 | A contract test covers every route and every §2 code |
+| T-17 | Composition and startup (initial administrator from environment) | T-16 | The system starts with an empty database and can log in as administrator |
+| T-18 | Move **domain-only** invariants to the database: \`ck_book_total_positive\`, \`ck_user_role\` | T-12 | A violating \`psql\` \`INSERT\` fails; \`data-model.md\` §4 is updated |
+| T-19 | Architecture tests (Articles I, II, and III) | T-17 | NetArchTest passes and fails when a forbidden import is introduced |
+| T-20 | \`infra\`: \`docker compose up\` starts the empty engine, API, and frontend | T-17 | One command; the database starts without tables until migrations run |
+| T-21 | \`tool\`: demonstration seeder **through the API** (≥ 40 books, 10 members, 15 loans, 3 overdue items) | T-17 | After running it, \`/loans/overdue\` returns 3 items and the report has rows |
+| T-22 | \`app\`: login, catalog, members, loan, return, overdue, report | T-16 | End-to-end manual walkthrough at the fair |
+| T-23 | \`page\`: static public presentation site | — | Opens without the API; correct on mobile and desktop |
 
-## Definición de terminado de la prueba
+## Assessment definition of done
 
-Quien llegue a T-17 con evidencia tiene el **núcleo** hecho. T-18 a T-23 son lo que separa un trabajo bueno de uno sobresaliente. Se evalúa
-el desempeño con SDD, no la cantidad de tareas: una tarea con evidencia vale más que tres a medias.
+Reaching T-17 with evidence means the **core** is complete. T-18 to T-23 distinguish good work
+from outstanding work. SDD performance—not the number of tasks—is evaluated: one evidenced task is
+worth more than three partial tasks.

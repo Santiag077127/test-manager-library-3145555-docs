@@ -1,12 +1,14 @@
-# ADR-001 · El esquema es propiedad de las migraciones de la aplicación
+# ADR-001 · Application migrations own the schema
 
-- **Estado:** aceptada
-- **Contexto:** el repositorio `infra` levanta un motor de base de datos. Alguien podría poner el DDL en un script de arranque del
-  contenedor y otro en las migraciones de la aplicación; con dos dueños, nadie sabe qué esquema corre en producción.
-- **Decisión:** **todo el DDL vive en las migraciones de la aplicación** (tablas, índices, restricciones y semilla de categorías).
-  `infra` solo crea el motor vacío, el usuario y el volumen.
-- **Alternativas descartadas:** scripts SQL en `infra/db/init/` (segunda fuente de verdad); ORM en modo «crear tablas al arrancar»
-  (no deja historial ni reversa).
-- **Consecuencias:** una extensión de Postgres o un índice nuevo se crea en la **misma** migración que lo usa. Un esquema cambiado a
-  mano en el motor es un defecto, no una variante.
-- **Cómo se verifica:** `infra` no contiene `CREATE TABLE`; las consultas de `data-model.md` §10 coinciden con las migraciones.
+- **Status:** accepted
+- **Context:** the \`infra\` repository starts a database engine. One person could place DDL in a
+  container startup script and another in application migrations; with two owners, nobody knows which
+  schema runs in production.
+- **Decision:** **all DDL lives in application migrations** (tables, indexes, constraints, and the
+  category seed). \`infra\` creates only the empty engine, user, and volume.
+- **Rejected alternatives:** SQL scripts in \`infra/db/init/\` (a second source of truth); ORM
+  “create tables at startup” mode (no history or rollback).
+- **Consequences:** a PostgreSQL extension or new index is created in the **same** migration that
+  uses it. A schema changed manually in the engine is a defect, not a variant.
+- **Verification:** \`infra\` contains no \`CREATE TABLE\`; the queries in \`data-model.md\` §10 match
+  the migrations.
