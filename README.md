@@ -59,6 +59,15 @@ En cualquiera de las dos carpetas, en este orden:
 5. `tasks.md` — qué hay que hacer y con qué evidencia se da por hecho.
 6. `adr/` — las decisiones de arquitectura, con sus alternativas y consecuencias.
 
+## Perfil de implementación del reto
+
+Las carpetas `spec-python/` y `spec-.net/` son referencias del mismo producto; no son el stack a
+implementar en esta prueba. Para traducir sus decisiones técnicas sin cambiar reglas de negocio,
+contrato HTTP ni modelo de datos, se debe seguir
+[`laravel-react-implementation.md`](laravel-react-implementation.md). Ese documento precisa la
+implementación en Laravel, React y PostgreSQL 16 y resuelve las decisiones de infraestructura que
+no pertenecen al producto.
+
 ## Los seis repositorios
 
 | Repositorio | Qué va ahí |
