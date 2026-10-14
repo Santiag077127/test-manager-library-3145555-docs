@@ -9,7 +9,7 @@ Read this page in five minutes before opening the rest. Details are in
 flowchart TB
     U["Librarian / Administrator"] --> APP["app (React)<br/>frontend"]
     V["Visitor"] --> PAGE["page<br/>static public site"]
-    APP -->|"HTTP /api/v1"| API["api<br/> .NET backend (Laravel in this challenge)"]
+    APP -->|"HTTP /api/v1"| API["api<br/>.NET backend (Laravel in this challenge)"]
     API --> PG[("PostgreSQL 16<br/>library schema")]
     API --> COV[("Covers<br/>disk / S3")]
     TOOL["tool<br/>demonstration seeder"] -->|"uses the API"| API
